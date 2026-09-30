@@ -250,25 +250,45 @@
                     <div class="pipeline-body">
                         <span class="step-badge">Step 03</span>
                         <h3>SVM Classifier Training</h3>
-                        <p>All stored embeddings are loaded and used to train a <strong>Linear SVM</strong> — each student ID is a class. The model is cached per session and re-trained automatically whenever a new student registers.</p>
+                        <p>All stored embeddings are loaded and used to train a <strong>Linear SVM</strong> — each student ID is a class. Cached per session, re-trained on every new registration. If training fails or only one student exists, the classifier is set to <strong>None</strong> and the pipeline falls back to nearest-neighbour distance-only matching.</p>
+                    </div>
+                </div>
+
+                <div class="pipeline-step">
+                    <div class="pipeline-icon">🎯</div>
+                    <div class="pipeline-body">
+                        <span class="step-badge">Step 04</span>
+                        <h3>Two Prediction Paths</h3>
+                        <p>Depending on the context, one of two functions is called — both funnel into the same <strong>_match_encoding()</strong> logic:</p>
+                        <div class="two-stage">
+                            <div class="stage-card">
+                                <div class="stage-label">identify_student() — Selfie Login</div>
+                                <p>Uses <strong>upsample=1</strong> since the face is close and large. Falls back to lower upsample values if no face is detected.</p>
+                            </div>
+                            <div class="stage-arrow">→</div>
+                            <div class="stage-card">
+                                <div class="stage-label">predict_attendance() — Classroom Photo</div>
+                                <p>Uses <strong>upsample=2</strong> to detect small, distant faces across the room.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="pipeline-step">
                     <div class="pipeline-icon">🔍</div>
                     <div class="pipeline-body">
-                        <span class="step-badge">Step 04</span>
-                        <h3>Two-Stage Attendance Prediction</h3>
-                        <p>Every face in a classroom photo goes through two checks before being marked present:</p>
+                        <span class="step-badge">Step 05</span>
+                        <h3>Matching Logic — _match_encoding()</h3>
+                        <p>Every detected face goes through two stages before being confirmed present:</p>
                         <div class="two-stage">
                             <div class="stage-card">
                                 <div class="stage-label">Stage 1 — SVM Nomination</div>
-                                <p>The SVM predicts which student the face belongs to with a confidence score. Faces below <strong>45% confidence</strong> are rejected immediately.</p>
+                                <p>The SVM predicts the most likely student ID via <strong>predict()</strong>. The old 45% confidence gate was removed — it was blocking valid matches.</p>
                             </div>
                             <div class="stage-arrow">→</div>
                             <div class="stage-card">
                                 <div class="stage-label">Stage 2 — Distance Verification</div>
-                                <p>The embedding is compared against all stored embeddings using <strong>L2 distance</strong>. Only faces within a distance of <strong>0.55</strong> are marked present.</p>
+                                <p>The embedding is compared against <em>all</em> stored embeddings for that student via <strong>_best_distance()</strong>. If the closest match is ≤ <strong>0.6</strong>, the student is marked present.</p>
                             </div>
                         </div>
                     </div>
@@ -280,16 +300,19 @@
                 <h3>Key Thresholds</h3>
                 <div class="threshold-grid">
                     <div class="threshold-row header">
-                        <span>Threshold</span><span>Value</span><span>Purpose</span>
+                        <span>Threshold</span><span>Old</span><span>Current</span><span>Note</span>
                     </div>
                     <div class="threshold-row">
-                        <span>SVM Confidence</span><span class="threshold-val">0.45</span><span>Reject uncertain SVM nominations</span>
+                        <span>SVM Confidence Gate</span><span class="threshold-val old">0.45</span><span class="threshold-val">removed</span><span>Was rejecting valid faces</span>
                     </div>
                     <div class="threshold-row">
-                        <span>L2 Distance</span><span class="threshold-val">0.55</span><span>Reject faces too far from stored embeddings</span>
+                        <span>L2 Distance</span><span class="threshold-val old">0.55</span><span class="threshold-val">0.6</span><span>dlib's recommended value</span>
                     </div>
                     <div class="threshold-row">
-                        <span>Upsample Factor</span><span class="threshold-val">2×</span><span>Detect smaller or distant faces in classroom photos</span>
+                        <span>Upsample (selfie)</span><span class="threshold-val old">2</span><span class="threshold-val">1 + fallback</span><span>Close-up faces</span>
+                    </div>
+                    <div class="threshold-row">
+                        <span>Upsample (classroom)</span><span class="threshold-val old">2</span><span class="threshold-val">2</span><span>Unchanged</span>
                     </div>
                 </div>
             </div>

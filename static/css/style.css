@@ -525,12 +525,18 @@ h4 {
 
 .threshold-row {
     display: grid;
-    grid-template-columns: 1.5fr 0.5fr 2fr;
+    grid-template-columns: 1.5fr 0.5fr 0.8fr 2fr;
     padding: 16px 24px;
     border-bottom: 1px solid #e5e7eb;
     font-size: 0.95rem;
     color: var(--text-muted);
     align-items: center;
+}
+
+.threshold-val.old {
+    color: #94a3b8;
+    text-decoration: line-through;
+    font-size: 0.95rem;
 }
 
 .threshold-row:last-child {
